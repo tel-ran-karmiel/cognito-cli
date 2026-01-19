@@ -4,23 +4,32 @@ import readline from "node:readline/promises"
 import {InitiateAuthCommand, RespondToAuthChallengeCommand,
      CognitoIdentityProviderClient, AuthenticationResultType,
     InitiateAuthCommandOutput} from "@aws-sdk/client-cognito-identity-provider"
+    const N_UNDERSCIRES = 100
 const{region, clientId} = getRegionClientId()
 async function main() {
     const cli: readline.Interface = readline.createInterface({input: process.stdin, output: process.stdout})
-    const {username, password} = await getUsernamePassword(cli)
-    const client = new CognitoIdentityProviderClient({region})
-    const resp: InitiateAuthCommandOutput = await initialAuthentication(client, username, password)
-    if(resp.AuthenticationResult){
-        printTokens(resp.AuthenticationResult);
-    } else {
-        const newPassword = await getNewPassword(cli)
-        const resp2: InitiateAuthCommandOutput = await respondAuthentication(resp, client, username, newPassword)
-        printTokens(resp2.AuthenticationResult)
+   try {
+     
+     const {username, password} = await getUsernamePassword(cli)
+     const client = new CognitoIdentityProviderClient({region})
+     const resp: InitiateAuthCommandOutput = await initialAuthentication(client, username, password)
+     if(resp.AuthenticationResult){
+         printTokens(resp.AuthenticationResult);
+     } else {
+         const newPassword = await getNewPassword(cli)
+         const resp2: InitiateAuthCommandOutput = await respondAuthentication(resp, client, username, newPassword)
+         printTokens(resp2.AuthenticationResult)
+     }
+   } catch (error) {
+       throw error
+   }
+    finally {
+        cli.close()
     }
 }
 main().catch(err => {
     const errorMessage = err.message;
-    console.error(err.$fault==="client" ? "client error: " : "server error: " + errorMessage)
+    console.error((err.$fault==="client" ? "client error: " : "server error: ") + errorMessage)
 })
 
 function getRegionClientId(): { region: string; clientId: string } {
@@ -57,9 +66,9 @@ async function initialAuthentication(client: CognitoIdentityProviderClient, user
 
 function printTokens(authenticationResult: AuthenticationResultType): void {
     console.log("access token: ",authenticationResult.AccessToken)
-    console.log("_".repeat(40))
+    console.log("_".repeat(N_UNDERSCIRES))
     console.log("id token: ", authenticationResult.IdToken)
-    console.log("_".repeat(40))
+    console.log("_".repeat(N_UNDERSCIRES))
     console.log("refresh token: ", authenticationResult.RefreshToken)
 }
 async function getNewPassword(cli: readline.Interface): Promise<string>{
